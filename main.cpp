@@ -1,6 +1,7 @@
 #include <iostream>
 #include <matplot/matplot.h>
 #include "FilteredDistance.h"
+#include "FilteredDistanceKalman.h"
 #include "1efilter.h"
 #include "datasets.h"
 
@@ -33,9 +34,10 @@ int main(int, char**){
     FilteredDistance newFilter(ONE_EURO_FCMIN, ONE_EURO_BETA, ONE_EURO_DCUTOFF);
     broken_one_euro_filter<> oldFilter(1, BROKEN_ONE_EURO_FCMIN, BROKEN_ONE_EURO_BETA, BROKEN_ONE_EURO_DCUTOFF);
     one_euro_filter<> euroFilter(1, ONE_EURO_FCMIN, ONE_EURO_BETA, ONE_EURO_DCUTOFF);
+    kalman::FilteredDistance kalmanFilter(0.1, 25);
     FilteredDistance customFilter(CUSTOM_ONE_EURO_FCMIN, CUSTOM_ONE_EURO_BETA, CUSTOM_ONE_EURO_DCUTOFF);
 
-    std::vector<double> tsData, uwbData, rawData, oldData, euroData, newData, customData;
+    std::vector<double> tsData, uwbData, rawData, oldData, euroData, newData, kalmanData, customData;
 
     const auto& measurements = moving_dev;
 
@@ -54,6 +56,10 @@ int main(int, char**){
         auto newResult = newFilter.getDistance();
         newData.push_back(newResult);
 
+        kalmanFilter.addMeasurement(distance);
+        auto kalmanResult = kalmanFilter.getDistance();
+        kalmanData.push_back(kalmanResult);
+
         // 1€ filter expects timestamps to be in seconds, but we were incorrectly using milliseconds
         auto oldResult = oldFilter(distance, micros() / 1e3f);
         oldData.push_back(oldResult);
@@ -69,6 +75,7 @@ int main(int, char**){
                   << "; uwb: " << uwbDistance
                   << "; raw: " << distance
                   << "; new: " << newResult
+                  << "; kalman: " << kalmanResult
                   << "; old: " << oldResult
                   << "; 1€: " << euroResult
                   << "; custom: " << customResult << "\n";
@@ -78,20 +85,23 @@ int main(int, char**){
 
     matplot::hold(matplot::on);
 
-    labels.push_back("uwb");
-    matplot::plot(tsData, uwbData, "--");
+    //labels.push_back("uwb");
+    //matplot::plot(tsData, uwbData, "--");
 
     labels.push_back("raw");
     matplot::plot(tsData, rawData);
 
-    labels.push_back("old ESPresense");
-    matplot::plot(tsData, oldData, "--+");
+    //labels.push_back("old ESPresense");
+    //matplot::plot(tsData, oldData, "--+");
 
     labels.push_back("new ESPresense");
     matplot::plot(tsData, newData, "--o");
 
-    labels.push_back("1€");
-    matplot::plot(tsData, euroData, "--d");
+    labels.push_back("kalman");
+    matplot::plot(tsData, kalmanData, "--o");
+
+    //labels.push_back("1€");
+    //matplot::plot(tsData, euroData, "--d");
 
     //labels.push_back("new ESPresense (custom params)");
     //matplot::plot(tsData, customData, "--s");

@@ -16,5 +16,5 @@ endif()
 
 set (CMAKE_CXX_STANDARD 17)
 
-add_executable(validate-1euro main.cpp FilteredDistance.cpp)
+add_executable(validate-1euro main.cpp FilteredDistance.cpp FilteredDistanceKalman.cpp)
 target_link_libraries(validate-1euro PUBLIC matplot)
